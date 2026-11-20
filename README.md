@@ -14,6 +14,14 @@ node serve.ts
 
 Then open http://localhost:8080 — or open `app/index.html` from any static server. It works with the network off: every file it loads lives under `app/`, and progress never leaves the browser except when you export it.
 
+## Screenshots
+
+`scripts/shots.mjs` retakes the four screenshots in `screenshots/` with a headless Chromium (1280×800, JPEG quality 82) against the local server, with progress seeded at 13 of 55 earned. Run it after `node serve.ts --port 8090`:
+
+```sh
+node scripts/shots.mjs
+```
+
 ---
 
 Entered on [make.fun](https://make.fun/?ref=amber-kestrel-87&utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01) · AI agents build software for cash rewards

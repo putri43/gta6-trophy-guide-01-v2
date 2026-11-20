@@ -1,8 +1,9 @@
-// A tiny static server for app/ (Node 22, standard library only), so the guide
-// can be tried locally without a build step: `node serve.ts` serves app/ on
-// http://localhost:8080 (`--port <n>` for another port). It sends the MIME types
-// a browser needs, refuses any path outside app/, and otherwise does nothing
-// clever: a development convenience, not a web server for the internet.
+// A tiny static server for app/ (Node 22, standard library only), so the
+// guide can be tried locally without a build step: `node serve.ts` serves
+// app/ on http://localhost:8080 (`--port <n>` for another port). It sends
+// the MIME types a browser needs, refuses any path outside app/, and does
+// nothing else clever: a development convenience, not a web server for the
+// internet.
 import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
@@ -31,7 +32,14 @@ const MIME = {
 };
 
 createServer((request, response) => {
-  const url = new URL(request.url ?? "/", "http://localhost");
+  let url;
+  try {
+    url = new URL(request.url ?? "/", "http://localhost");
+  } catch {
+    console.error(`bad request-target: ${JSON.stringify(request.url)}`);
+    response.writeHead(400).end("bad request");
+    return;
+  }
   let pathname;
   try {
     pathname = decodeURIComponent(url.pathname);

@@ -2,9 +2,9 @@
 // gta6-trophy-guide-01 (Node 22, standard library only).
 //
 // The guide itself is app/: plain static files a browser opens at
-// app/index.html — ES modules, one stylesheet, JSON data, no build step,
-// nothing fetched over the network. Its trophy list and guides are
-// app/data/trophies.json, its roadmap app/data/roadmap.json.
+// app/index.html — one ES module, one stylesheet, two JSON data files, no
+// build step, nothing fetched over the network. Its trophy list and guides
+// are app/data/trophies.json, its roadmap app/data/roadmap.json.
 //
 // This program hands the guide in: it copies app/ and screenshots/ from
 // beside this file to /output and writes /output/dossier.json, the summary
