@@ -1,53 +1,65 @@
-// Sunset Platinum — the hand-in program (Node 22, standard library only).
+// Sunset Platinum — hand-in program for gta6-trophy-guide-01.
 //
-// What it does, in three steps:
-//   1. Takes the guide in app/ and the screenshots in screenshots/ beside this file.
-//   2. Copies both trees into the output directory the grader reads
-//      (/output, or $MAKEFUN_OUTPUT_DIR when you run it yourself).
-//   3. Writes /output/dossier.json with the vendored make.fun library, so the
-//      judge reads the same summary the scorer rebuilds and compares byte for byte.
+// What it does, in order: checks the guide data is complete (55 trophies, one
+// guide each, grade counts that add up), copies app/ and screenshots/ beside
+// this file into the output directory, and writes dossier.json with the
+// vendored make.fun library, which is the summary the judge reads. It runs on
+// Node's standard library only, takes no arguments, and writes nothing
+// outside the output directory.
 //
-// The guide itself is plain static files — no build step, no network at run time.
-// vendor/makefun-frontend.ts stays exactly as the kit shipped it: the scorer
-// requires the dossier to match what its own copy of that library writes.
-//
-// Run it yourself with:
+// Run it outside the grader with MAKEFUN_OUTPUT_DIR:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// The grader sets /output itself. vendor/makefun-frontend.ts stays exactly
+// as the kit shipped it: the scorer rebuilds the dossier with its own copy
+// and the two must match byte for byte.
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
 
-const repoRoot = fileURLToPath(new URL('.', import.meta.url));
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
-const shotDir = join(repoRoot, 'screenshots');
+const repo = resolve(fileURLToPath(new URL('.', import.meta.url)));
+const destination = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-function clearOutput() {
-  rmSync(outDir, { recursive: true, force: true });
-  mkdirSync(outDir, { recursive: true });
+function fail(message: string): never {
+  throw new Error(`sunset-platinum: ${message}`);
 }
 
-function copyGuide() {
-  cpSync(join(repoRoot, 'app'), join(outDir, 'app'), { recursive: true });
-  mkdirSync(join(outDir, 'screenshots'), { recursive: true });
-  if (existsSync(shotDir)) {
-    cpSync(shotDir, join(outDir, 'screenshots'), { recursive: true });
+function checkGuide(): void {
+  const raw = readFileSync(join(repo, 'app', 'data', 'trophies.json'), 'utf-8');
+  const doc = JSON.parse(raw) as { trophies: Array<{ id: number; grade: string; guide: string; name: string }> };
+  if (doc.trophies.length !== 55) fail(`expected 55 trophies, found ${doc.trophies.length}`);
+  const grades = new Map<string, number>();
+  for (const trophy of doc.trophies) {
+    if (!trophy.guide || trophy.guide.trim().length < 20) fail(`trophy ${trophy.id} (${trophy.name}) has no guide`);
+    grades.set(trophy.grade, (grades.get(trophy.grade) ?? 0) + 1);
+  }
+  const expected: Record<string, number> = { platinum: 1, gold: 2, silver: 6, bronze: 46 };
+  for (const [grade, count] of Object.entries(expected)) {
+    if (grades.get(grade) !== count) fail(`expected ${count} ${grade}, found ${grades.get(grade) ?? 0}`);
+  }
+  const shots = readdirSync(join(repo, 'screenshots')).filter((f) => /\.(png|jpe?g)$/i.test(f));
+  if (shots.length < 3 || shots.length > 4) fail(`expected 3 or 4 screenshots, found ${shots.length}`);
+  for (const shot of shots) {
+    const size = statSync(join(repo, 'screenshots', shot)).size;
+    if (size > 262144) fail(`screenshot ${shot} is ${size} bytes, over the 256 KiB cap`);
   }
 }
 
-function writeDossier() {
-  // The gate's own caps, from the kit: dossier text at most 163,840 bytes,
-  // at most 4 screenshots of at most 256 KiB, app/ at most 993 files and 48 MiB.
-  const dossier = buildDossier(outDir, {
-    text_max_bytes: 163840,
-    screenshots: { max: 4, max_bytes: 262144 },
-    app_max_files: 993,
-    app_max_bytes: 50331648,
-  });
-  writeFileSync(join(outDir, 'dossier.json'), dossier);
+checkGuide();
+
+mkdirSync(destination, { recursive: true });
+cpSync(join(repo, 'app'), join(destination, 'app'), { recursive: true });
+mkdirSync(join(destination, 'screenshots'), { recursive: true });
+if (existsSync(join(repo, 'screenshots'))) {
+  cpSync(join(repo, 'screenshots'), join(destination, 'screenshots'), { recursive: true });
 }
 
-clearOutput();
-copyGuide();
-writeDossier();
+const dossier = buildDossier(destination, {
+  text_max_bytes: 163840,
+  screenshots: { max: 4, max_bytes: 262144 },
+  app_max_files: 993,
+  app_max_bytes: 50331648,
+});
+writeFileSync(join(destination, 'dossier.json'), dossier);
+console.log(`dossier written: ${dossier.length} bytes to ${destination}`);

@@ -1,176 +1,118 @@
-// Sunset Platinum — screenshot driver. Serves app/ with serve.ts, opens it in the
-// Playwright headless shell over CDP (Node's built-in WebSocket, no libraries),
-// seeds 13 of 55 trophies earned, and takes the 4 screenshots in shots.json.
+// Sunset Platinum — screenshot driver (Node standard library only).
+// Drives the Playwright headless shell over CDP with the built-in WebSocket:
+// for each scene in shots.json it opens the guide on the local server, waits
+// for it to settle, and saves a JPEG. It also logs every network request so
+// the offline check is evidence, not a claim.
 //
-//   node scripts/shots.mjs [--port 8080] [--out screenshots]
-//
-// It prints every request the page made, so you can check the guide loads only
-// its own files, and the byte size of each screenshot (cap 256 KiB).
-
+//   node serve.ts --port 8090 &           # in another shell
+//   node scripts/shots.mjs --port 8090    # writes screenshots/
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const here = fileURLToPath(new URL('.', import.meta.url));
-const repo = join(here, '..');
-const shellBin = `${process.env.HOME}/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell`;
+const SHELL = '/home/hatch/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell';
+const DEBUG_PORT = 9223;
 
-const args = new Map();
-for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i], process.argv[i + 1]);
-const port = Number(args.get('--port') || 8080);
-const outDir = args.get('--out') || join(repo, 'screenshots');
-const debugPort = 9333;
-
-const VIEWS = [
-  { file: '1-cover.jpg', hash: '#/trophies?open=17' },
-  { file: '2-roadmap.jpg', hash: '#/roadmap' },
-  { file: '3-missables.jpg', hash: '#/missables' },
-  { file: '4-next-up.jpg', hash: '#/next' },
-];
-
-// 13 earned, as the house guides seed them: story through Chapter 1, a few
-// activities, one missable, and a head start on the money stage.
-const SEED = {
-  earned: { 2: true, 3: true, 8: true, 15: true, 16: true, 17: true, 20: true, 21: true, 28: true, 33: true, 42: true, 44: true, 52: true },
-  notes: { 17: 'Gold each range — take it slow, learn the pattern first.' },
-  counts: { 17: 12 },
-  spoiler: true,
+const args = process.argv.slice(2);
+const get = (flag, fallback) => {
+  const i = args.indexOf(flag);
+  return i === -1 ? fallback : args[i + 1];
 };
+const appPort = get('--port', '8090');
+const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const scenes = JSON.parse(readFileSync(join(repo, 'shots.json'), 'utf-8'));
+mkdirSync(join(repo, 'screenshots'), { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function waitForServer() {
-  for (let i = 0; i < 40; i++) {
-    try {
-      const res = await fetch(`http://localhost:${port}/`);
-      if (res.ok) return;
-    } catch { /* not up yet */ }
-    await sleep(250);
-  }
-  throw new Error('serve.ts did not answer on port ' + port);
+async function json(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return res.json();
 }
 
-function startServer() {
-  const child = spawn('node', ['serve.ts'], {
-    cwd: repo,
-    env: { ...process.env, PORT: String(port) },
-    stdio: ['ignore', 'pipe', 'pipe'],
+let msgId = 0;
+const pending = new Map();
+let ws;
+const seenUrls = [];
+
+function send(method, params, sessionId) {
+  const id = ++msgId;
+  return new Promise((resolvePromise, reject) => {
+    pending.set(id, { resolve: resolvePromise, reject });
+    ws.send(JSON.stringify({ id, method, params, sessionId }));
   });
-  child.stdout.on('data', (d) => process.stdout.write(`[serve] ${d}`));
-  child.stderr.on('data', (d) => process.stdout.write(`[serve] ${d}`));
-  return child;
-}
-
-function startShell() {
-  return spawn(shellBin, [
-    '--headless=new',
-    `--remote-debugging-port=${debugPort}`,
-    '--no-sandbox',
-    '--disable-gpu',
-    '--window-size=1280,800',
-    'about:blank',
-  ], { stdio: ['ignore', 'pipe', 'pipe'] });
-}
-
-async function listTargets() {
-  for (let i = 0; i < 40; i++) {
-    try {
-      const res = await fetch(`http://localhost:${debugPort}/json/list`);
-      const targets = await res.json();
-      const page = targets.find((t) => t.type === 'page');
-      if (page) return page;
-    } catch { /* not up yet */ }
-    await sleep(250);
-  }
-  throw new Error('no CDP page target appeared');
-}
-
-class Cdp {
-  constructor(ws) {
-    this.ws = ws;
-    this.nextId = 1;
-    this.waiters = new Map();
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(String(event.data));
-      if (msg.id && this.waiters.has(msg.id)) {
-        const { resolve, reject } = this.waiters.get(msg.id);
-        this.waiters.delete(msg.id);
-        if (msg.error) reject(new Error(msg.error.message));
-        else resolve(msg.result);
-      }
-    };
-  }
-  send(method, params = {}) {
-    const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.waiters.set(id, { resolve, reject });
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-  async eval(expression) {
-    const r = await this.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
-    if (r.exceptionDetails) throw new Error('page eval failed: ' + JSON.stringify(r.exceptionDetails).slice(0, 300));
-    return r.result ? r.result.value : undefined;
-  }
 }
 
 async function main() {
-  mkdirSync(outDir, { recursive: true });
-  const server = startServer();
-  const shell = startShell();
-  const requests = [];
+  const shell = spawn(SHELL, [
+    `--remote-debugging-port=${DEBUG_PORT}`,
+    '--no-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    'about:blank',
+  ], { stdio: 'ignore' });
   try {
-    await waitForServer();
-    const target = await listTargets();
-    const ws = new WebSocket(target.webSocketDebuggerUrl);
-    await new Promise((resolve, reject) => {
-      ws.onopen = resolve;
-      ws.onerror = reject;
-    });
-    const cdp = new Cdp(ws);
-    await cdp.send('Page.enable');
-    await cdp.send('Runtime.enable');
-    await cdp.send('Network.enable');
-    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
-    ws.addEventListener('message', (event) => {
-      const msg = JSON.parse(String(event.data));
-      if (msg.method === 'Network.requestWillBeSent') {
-        requests.push(msg.params.request.url);
+    let version;
+    for (let i = 0; i < 40; i++) {
+      try {
+        version = await json(`http://127.0.0.1:${DEBUG_PORT}/json/version`);
+        break;
+      } catch {
+        await sleep(250);
       }
+    }
+    if (!version?.webSocketDebuggerUrl) throw new Error('headless shell did not open its debug port');
+    ws = new WebSocket(version.webSocketDebuggerUrl);
+    await new Promise((resolvePromise, reject) => {
+      ws.onopen = () => resolvePromise();
+      ws.onerror = () => reject(new Error('CDP websocket failed to open'));
     });
+    ws.onmessage = (event) => {
+      const data = JSON.parse(String(event.data));
+      if (data.id !== undefined) {
+        const waiter = pending.get(data.id);
+        if (!waiter) return;
+        pending.delete(data.id);
+        if (data.error) waiter.reject(new Error(data.error.message));
+        else waiter.resolve(data.result ?? {});
+      } else if (data.method === 'Network.requestWillBeSent') {
+        const req = data.params?.request;
+        if (req?.url) seenUrls.push(req.url);
+      }
+    };
+    const target = await send('Target.createTarget', { url: 'about:blank' });
+    const targetId = target.targetId;
+    const attached = await send('Target.attachToTarget', { targetId, flatten: true });
+    const session = attached.sessionId;
+    await send('Page.enable', {}, session);
+    await send('Runtime.enable', {}, session);
+    await send('Network.enable', {}, session);
 
-    const base = `http://localhost:${port}/`;
-    await cdp.send('Page.navigate', { url: base });
-    await sleep(1200);
-    await cdp.eval(`localStorage.setItem('sunset-platinum-v3', ${JSON.stringify(JSON.stringify(SEED))})`);
-    // A hash-only navigation does not reload the document, so the app would
-    // keep the blank state it booted with — reload so it boots on the seed.
-    await cdp.send('Page.reload', { ignoreCache: true });
-    await sleep(1200);
-
-    for (const shot of VIEWS) {
-      await cdp.send('Page.navigate', { url: base + shot.hash });
-      await sleep(1400);
-      await cdp.eval('window.scrollTo(0, 0)');
-      const shot64 = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 82 });
-      const bytes = Buffer.from(shot64.data, 'base64');
-      writeFileSync(join(outDir, shot.file), bytes);
-      console.log(`${shot.file}: ${bytes.length} bytes`);
+    for (const scene of scenes) {
+      await send('Emulation.setDeviceMetricsOverride', { width: scene.viewport.width, height: scene.viewport.height, deviceScaleFactor: 1, mobile: false }, session);
+      await send('Page.navigate', { url: `http://127.0.0.1:${appPort}${scene.path}` }, session);
+      await sleep(2500);
+      const ready = await send('Runtime.evaluate', { expression: `document.readyState + '|' + document.querySelectorAll('.card').length`, returnByValue: true }, session);
+      const value = ready.result?.value ?? '?';
+      console.log(`${scene.file}: ready=${value}`);
+      const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 82 }, session);
+      const bytes = Buffer.from(shot.data, 'base64');
+      writeFileSync(join(repo, 'screenshots', scene.file), bytes);
+      console.log(`${scene.file}: ${bytes.length} bytes`);
     }
 
-    const outside = requests.filter((u) => !u.startsWith(`http://localhost:${port}`) && !u.startsWith('data:'));
-    console.log(`requests: ${requests.length} total, ${outside.length} outside localhost`);
-    for (const u of new Set(requests)) console.log('  ' + u);
-    if (outside.length) console.log('OUTSIDE REQUESTS: ' + outside.join(', '));
-    ws.close();
+    const outside = seenUrls.filter((u) => !u.startsWith('http://127.0.0.1') && !u.startsWith('data:') && u !== 'about:blank');
+    console.log(`requests seen: ${seenUrls.length}, outside local server: ${outside.length}`);
+    for (const u of [...new Set(outside)]) console.log(`  EXTERNAL: ${u}`);
   } finally {
+    try { ws?.close(); } catch { /* already closed */ }
     shell.kill('SIGTERM');
-    server.kill('SIGTERM');
   }
 }
 
-main().catch((err) => {
-  console.error(err);
+main().catch((error) => {
+  console.error(error.message);
   process.exit(1);
 });

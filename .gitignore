@@ -1,4 +1,16 @@
-node_modules/
+# Sunset Platinum — local ignores
+# generated output + grader output
 out/
+output/
+dist/
+build/
+# dependencies
+node_modules/
+# os + editor droppings
 .DS_Store
+Thumbs.db
+*.swp
 *.log
+# local secrets / env
+.env
+*.local

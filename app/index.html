@@ -3,37 +3,95 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sunset Platinum — GTA VI Trophy Guide &amp; Tracker</title>
-<meta name="description" content="An offline guide and tracker for all 55 Grand Theft Auto VI PlayStation 5 trophies: checklist, roadmap, missables and guides in our own words.">
-<link rel="stylesheet" href="css/style.css">
+<title>Sunset Platinum — GTA VI trophy guide</title>
+<link rel="stylesheet" href="css/guide.css">
 </head>
 <body>
 <header class="masthead">
-  <div class="masthead-inner">
-    <div class="brand">
-      <h1>Sunset Platinum</h1>
-      <p class="tagline">Every GTA VI trophy — guided, tracked, offline.</p>
-    </div>
-    <div class="progress-block" id="progressBlock" aria-live="polite">
-      <div class="big-count"><span id="earnedCount">0</span><span class="of">/ 55</span></div>
-      <div class="bar"><div class="bar-fill" id="progressFill" style="width:0%"></div></div>
-      <p class="progress-label" id="progressLabel">0% to the platinum</p>
-      <p class="grade-line" id="gradeLine"></p>
-    </div>
+  <div class="masthead-text">
+    <p class="kicker">Grand Theft Auto VI · PlayStation 5 · 55 trophies</p>
+    <h1>Sunset Platinum</h1>
+    <p class="lede">Every trophy, in your own words, with a road to the platinum. Tick them off as you earn them — progress lives on this device only.</p>
   </div>
-  <nav class="tabs" id="tabs" aria-label="Sections">
-    <a href="#/trophies" data-tab="trophies">Trophies</a>
-    <a href="#/roadmap" data-tab="roadmap">Roadmap</a>
-    <a href="#/missables" data-tab="missables">Missables</a>
-    <a href="#/next" data-tab="next">Next Up</a>
-    <a href="#/settings" data-tab="settings">Settings</a>
-  </nav>
+  <div class="progress-card" aria-label="Overall progress">
+    <p class="progress-count"><span id="earned-count">0</span><span class="of"> / 55</span></p>
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+    <p id="grade-line" class="grade-line">Platinum 0/1 · Gold 0/2 · Silver 0/6 · Bronze 0/46</p>
+  </div>
 </header>
-<main id="view" class="view"></main>
-<footer class="foot">
-  <p>Sunset Platinum is a fan-made guide. Grand Theft Auto and GTA are marks of Take-Two Interactive; this guide uses no Rockstar logo or official artwork. Trophy names and descriptions are as PlayStation publishes them; guides are our own words. Sources: the official list on Exophase and PSNProfiles.</p>
-  <p>Works fully offline — every file it loads lives in this folder.</p>
+
+<nav class="tabs" aria-label="Guide sections">
+  <button type="button" class="tab active" data-tab="guide">Guide</button>
+  <button type="button" class="tab" data-tab="roadmap">Roadmap</button>
+  <button type="button" class="tab" data-tab="missables">Missables</button>
+  <button type="button" class="tab" data-tab="nextup">Next Up</button>
+</nav>
+
+<section class="controls" aria-label="Filters">
+  <label class="control">Search <input id="search" type="search" placeholder="Trophy, mission or keyword…" autocomplete="off"></label>
+  <label class="control">Grade
+    <select id="grade-filter">
+      <option value="all">All grades</option>
+      <option value="platinum">Platinum</option>
+      <option value="gold">Gold</option>
+      <option value="silver">Silver</option>
+      <option value="bronze">Bronze</option>
+    </select>
+  </label>
+  <label class="control">Type
+    <select id="kind-filter">
+      <option value="all">All types</option>
+      <option value="story">Story</option>
+      <option value="stranger">Stranger</option>
+      <option value="activity">Activity</option>
+      <option value="skill">Skill</option>
+      <option value="collectible">Collectible</option>
+      <option value="exploration">Exploration</option>
+      <option value="combat">Combat</option>
+      <option value="stealth">Stealth</option>
+      <option value="heist">Heist</option>
+      <option value="partner">Partner</option>
+      <option value="money">Money</option>
+      <option value="challenge">Challenge</option>
+      <option value="secret">Secret</option>
+      <option value="completion">Completion</option>
+      <option value="platinum">Platinum</option>
+    </select>
+  </label>
+  <label class="check"><input id="hide-earned" type="checkbox"> Hide earned</label>
+  <label class="check"><input id="spoiler" type="checkbox"> Spoiler-safe (mask story trophies)</label>
+  <button id="export" type="button">Export progress</button>
+  <label class="import-btn">Import progress <input id="import" type="file" accept="application/json"></label>
+</section>
+
+<main>
+  <section id="tab-guide" class="panel active">
+    <p id="result-line" class="result-line"></p>
+    <div id="cards" class="cards"></div>
+  </section>
+
+  <section id="tab-roadmap" class="panel">
+    <p class="panel-intro">Five stages, in play order. Finish a stage before the next one and the platinum falls out at the end.</p>
+    <div id="stages" class="stages"></div>
+  </section>
+
+  <section id="tab-missables" class="panel">
+    <p class="panel-intro">Six trophies to grab when the moment comes. <strong>None is confirmed permanently missable</strong> — every one can be retried with mission replay or a fresh attempt. The flags below mean “do it now, not later”.</p>
+    <div id="missable-cards" class="cards"></div>
+  </section>
+
+  <section id="tab-nextup" class="panel">
+    <p class="panel-intro">The cheapest trophies still on the table, picked by grade and stage.</p>
+    <div id="nextup-counters" class="counters"></div>
+    <ol id="nextup-list" class="nextup-list"></ol>
+  </section>
+</main>
+
+<footer>
+  <p>Sources for trophy names and official descriptions: Exophase · PSNProfiles. All guides are written for this page in our own words.</p>
+  <p>Sunset Platinum is an unofficial fan guide. Grand Theft Auto and GTA are marks of Rockstar Games; this guide is not affiliated with or endorsed by Rockstar Games or Sony Interactive Entertainment.</p>
 </footer>
-<script type="module" src="js/main.js"></script>
+
+<script type="module" src="js/guide.js"></script>
 </body>
 </html>
