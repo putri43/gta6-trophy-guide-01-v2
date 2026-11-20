@@ -4,57 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sunset Platinum — GTA VI Trophy Guide &amp; Tracker</title>
-<meta name="description" content="A free, offline guide and tracker for all 55 GTA VI trophies: official names, descriptions and grades, saved progress, a roadmap to the platinum, flagged missables, and a cited guide for every trophy.">
+<meta name="description" content="An offline guide and tracker for all 55 Grand Theft Auto VI PlayStation 5 trophies: checklist, roadmap, missables and guides in our own words.">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="masthead">
-  <div class="sun" aria-hidden="true"></div>
-  <div class="mast-text">
-    <h1>Sunset Platinum</h1>
-    <p>GTA VI trophy guide &amp; tracker — Grand Theft Auto VI · PlayStation 5</p>
+  <div class="masthead-inner">
+    <div class="brand">
+      <h1>Sunset Platinum</h1>
+      <p class="tagline">Every GTA VI trophy — guided, tracked, offline.</p>
+    </div>
+    <div class="progress-block" id="progressBlock" aria-live="polite">
+      <div class="big-count"><span id="earnedCount">0</span><span class="of">/ 55</span></div>
+      <div class="bar"><div class="bar-fill" id="progressFill" style="width:0%"></div></div>
+      <p class="progress-label" id="progressLabel">0% to the platinum</p>
+      <p class="grade-line" id="gradeLine"></p>
+    </div>
   </div>
-  <div class="progress" id="progressBox">
-    <div class="count"><span id="earnedCount">0</span><span class="of"> / 55</span></div>
-    <div class="track" role="progressbar" aria-label="Trophies earned" aria-valuemin="0" aria-valuemax="55" aria-valuenow="0" id="progressBar"><div class="fill" id="progressFill"></div></div>
-    <p class="pct" id="progressNote">0% to the platinum</p>
-  </div>
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <a href="#/trophies" data-tab="trophies">Trophies</a>
+    <a href="#/roadmap" data-tab="roadmap">Roadmap</a>
+    <a href="#/missables" data-tab="missables">Missables</a>
+    <a href="#/next" data-tab="next">Next Up</a>
+    <a href="#/settings" data-tab="settings">Settings</a>
+  </nav>
 </header>
-
-<div class="shell">
-  <aside class="side">
-    <nav aria-label="Guide sections" id="nav">
-      <button type="button" data-route="guide" class="on">Guide &amp; checklist</button>
-      <button type="button" data-route="roadmap">Roadmap</button>
-      <button type="button" data-route="missables">Missables</button>
-      <button type="button" data-route="next">Next up</button>
-    </nav>
-    <section class="panel" aria-label="Settings">
-      <h2>Settings</h2>
-      <label class="check"><input type="checkbox" id="spoilerToggle"> <span>Hide story spoilers<br><small>Hidden trophies stay hidden until earned</small></span></label>
-      <div class="btn-row">
-        <button type="button" id="exportBtn">Export progress</button>
-        <button type="button" id="importBtn">Import progress</button>
-        <input type="file" id="importFile" accept="application/json,.json" hidden>
-      </div>
-      <button type="button" id="resetBtn" class="danger">Reset all progress</button>
-      <p class="fine">Progress lives in this browser only. Export downloads a JSON file; import reads one back.</p>
-    </section>
-    <section class="panel" aria-label="Trophy counts">
-      <h2>The list</h2>
-      <ul class="counts" id="gradeCounts"></ul>
-      <p class="fine">28 of the 55 are hidden on PlayStation until earned.</p>
-    </section>
-  </aside>
-
-  <main id="view" aria-live="polite"></main>
-</div>
-
-<footer>
-  <p>Names, descriptions and grades are PlayStation's official list (55 trophies: 1 platinum, 2 gold, 6 silver, 46 bronze; 28 hidden). Guides are written for this page from those descriptions and cite their sources — see each trophy's Sources line. No Rockstar logo or official artwork is used; the look is original. Works offline: every file it loads lives in this folder, and your progress never leaves your browser except when you export it.</p>
-  <p>Sources: the official list on <a href="https://www.exophase.com/game/grand-theft-auto-vi-psn/trophies/">Exophase</a> and <a href="https://psnprofiles.com/trophies/43531-grand-theft-auto-vi">PSNProfiles</a>. The game launched 19 Nov 2026 — where a step is not pinned down by the official description, the guide says so instead of guessing.</p>
+<main id="view" class="view"></main>
+<footer class="foot">
+  <p>Sunset Platinum is a fan-made guide. Grand Theft Auto and GTA are marks of Take-Two Interactive; this guide uses no Rockstar logo or official artwork. Trophy names and descriptions are as PlayStation publishes them; guides are our own words. Sources: the official list on Exophase and PSNProfiles.</p>
+  <p>Works fully offline — every file it loads lives in this folder.</p>
 </footer>
-
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

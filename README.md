@@ -1,27 +1,38 @@
-# gta6-trophy-guide-01
+# Sunset Platinum — GTA VI Trophy Guide & Tracker
 
-[![make.fun · gta6-trophy-guide-01](https://make.fun/badge/gta6-trophy-guide-01.svg)](https://make.fun/bounty/gta6-trophy-guide-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01)
-[![rank](https://make.fun/badge/gta6-trophy-guide-01/putri43/gta6-trophy-guide-01-v2/rank.svg)](https://make.fun/bounty/gta6-trophy-guide-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01)
-[![reward](https://make.fun/badge/gta6-trophy-guide-01/putri43/gta6-trophy-guide-01-v2/reward.svg)](https://make.fun/bounty/gta6-trophy-guide-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01)
+[![Rank](https://make.fun/api/competitions/gta6-trophy-guide-01/badge/rank.svg?repo=putri43/gta6-trophy-guide-01-v2)](https://make.fun/bounty/gta6-trophy-guide-01)
+[![Reward](https://make.fun/api/competitions/gta6-trophy-guide-01/badge/reward.svg?repo=putri43/gta6-trophy-guide-01-v2)](https://make.fun/bounty/gta6-trophy-guide-01)
+[![make.fun](https://make.fun/api/competitions/gta6-trophy-guide-01/badge/entry.svg?repo=putri43/gta6-trophy-guide-01-v2)](https://make.fun/bounty/gta6-trophy-guide-01)
 
-Sunset Platinum — a free, open-source, offline guide and tracker for all 55 GTA VI trophies on PlayStation 5: the official names, descriptions and grades, a checklist saved in the browser with export and import, filters by kind and grade, a spoiler setting that hides story trophies until earned, a 5-stage roadmap to the platinum, the six setup-dependent missables flagged, and a guide for every trophy in our own words that cites its sources. The look is original (a Vice City sunset theme drawn in CSS) — no Rockstar logo or official artwork.
+An offline, open-source guide and tracker for all **55 PlayStation 5 trophies** of Grand Theft Auto VI — built for the [gta6-trophy-guide-01](https://make.fun/bounty/gta6-trophy-guide-01) bounty on make.fun.
+
+## What it does
+
+- **Checklist tracker** — every trophy with its official name, description and grade; tick them off as you earn them. Progress, notes and counters are saved in your browser (localStorage), with export and import.
+- **Filters** — search, filter by kind (story, missions, strangers, activities, collectibles, combat, money, secrets) and by grade, plus a missable-only view.
+- **Spoiler setting** — hidden story trophies stay masked (name, description and guide) until you earn them or turn spoilers off.
+- **Roadmap to the platinum** — five stages in play order, each with its own progress bar and per-trophy links.
+- **Missables flagged** — the six trophies built around one-time moments, with an honest note: no trophy is confirmed permanently missable yet.
+- **Next Up planner** — the next trophies to chase, stage by stage, with grade counters.
+- **Guides in our own words** — every trophy has a guide that cites its sources (the official list on Exophase for name, description and grade; PSNProfiles for PSN progress targets). Where a step is not pinned down by the official description, the guide says plainly it has not been checked in the game yet.
 
 ## Run it
 
 ```sh
 node serve.ts
+# open http://localhost:8080
 ```
 
-Then open http://localhost:8080 — or open `app/index.html` from any static server. It works with the network off: every file it loads lives under `app/`, and progress never leaves the browser except when you export it.
+No build step, no network at run time — every file the app loads lives under `app/`.
 
-## Screenshots
-
-`scripts/shots.mjs` retakes the four screenshots in `screenshots/` with a headless Chromium (1280×800, JPEG quality 82) against the local server, with progress seeded at 13 of 55 earned. Run it after `node serve.ts --port 8090`:
+## Hand it in
 
 ```sh
-node scripts/shots.mjs
+mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 ```
 
----
+`main.ts` copies `app/` and `screenshots/` to the output directory and writes `dossier.json` with the vendored make.fun library.
 
-Entered on [make.fun](https://make.fun/?ref=amber-kestrel-87&utm_source=github&utm_medium=readme&utm_campaign=gta6-trophy-guide-01) · AI agents build software for cash rewards
+## License
+
+MIT — see [LICENSE](LICENSE).
